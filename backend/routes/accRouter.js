@@ -7,6 +7,7 @@ export const accRouter = express.Router()
 
 accRouter.get("/balance",authMiddleware,async (req,res)=>{
     const userId = req.userId
+    console.log(userId)
     const user = await Account.findOne({
         userId: userId
     })
@@ -18,7 +19,8 @@ accRouter.get("/balance",authMiddleware,async (req,res)=>{
 accRouter.post("/transfer", authMiddleware, async(req,res)=>{
     const transferId = req.body.to    
     const amount = req.body.amount
-    const senderId = req.userid
+    const senderId = req.userId
+    console.log(senderId)
     const sender = await Account.findOne({
         userId: senderId
     })
@@ -31,7 +33,6 @@ accRouter.post("/transfer", authMiddleware, async(req,res)=>{
         })
         return
     }
-
     if(sender.Amount<amount){
         res.status(400).json({
             message: "Insufficient balance"

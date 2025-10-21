@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 
 export function authMiddleware(req,res,next){
-    const authHeader = req.header.authorization
+    const authHeader = req.headers.authorization
 
     const token = authHeader.split(" ")[1]
 
@@ -13,6 +13,6 @@ export function authMiddleware(req,res,next){
         })
         return
     }
-    req.userId = userId
+    req.userId = userId.userId
     next()
 }

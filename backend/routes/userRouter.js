@@ -33,7 +33,7 @@ userRouter.post("/signup", async (req,res)=>{
                 })
                 return
         }
-        const exsistingUser = User.findOne({
+        const exsistingUser = await User.findOne({
                 username: req.body.username
         })
         if(exsistingUser){
@@ -53,8 +53,8 @@ userRouter.post("/signup", async (req,res)=>{
                 userId: user._id,
                 Amount: Math.random()*10000
         })
-        const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET)
-
+        const userId = user._id
+        const token = jwt.sign({userId}, process.env.JWT_SECRET)
         res.status(200).json({
                 meassge: "User created succesfully",
                 token: token
@@ -69,12 +69,18 @@ userRouter.post("/signin",async (req,res)=>{
                 })
                 return
         }
-        const user = await userModel.findFirst({
+        const user = await User.findOne({
                 username: req.body.username,
         })
         if(!user){
                 res.status(411).json({
                         meassge: "User not found"
+                })
+                return
+        }
+        if(req.body.password != user.password){
+                res.status(411).json({
+                        meassge: "Incorrect password"
                 })
                 return
         }
@@ -92,7 +98,7 @@ userRouter.put("/",authMiddleware, (req,res)=>{
                 })
                 return
         }
-        userModel.updateOne({_id:req.userId},req.body)
+        User.updateOne({_id:req.userId},req.body)
 
         res.status(200).json({
                 message: "Information updated"
@@ -102,7 +108,7 @@ userRouter.put("/",authMiddleware, (req,res)=>{
 userRouter.get("/bulk",(req,res)=>{
         const filter = req.query.filter || ""
 
-        const users = userModel.find({
+        const users = User.find({
                 $or:[{
                         firstname:{
                                 "$regex":filter
