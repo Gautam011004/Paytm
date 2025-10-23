@@ -1,10 +1,10 @@
-import { Account, User } from "../../db/db.js";
-import { authMiddleware } from "../middlewares/middleware.js";
+import {authMiddleware } from "../middlewares/middleware.js";
 import jwt from "jsonwebtoken"; 
 import express from "express"
-import  { z, string } from "zod";
+import { z }  from "zod"
+import { PrismaClient } from "@prisma/client";
 export const userRouter = express.Router() 
-
+const Prisma = new PrismaClient()
 
 const userModel = z.object ({
         username: z.string().email(),
@@ -33,8 +33,10 @@ userRouter.post("/signup", async (req,res)=>{
                 })
                 return
         }
-        const exsistingUser = await User.findOne({
-                username: req.body.username
+        const exsistingUser = await Prisma.user.findFirst({
+                where:{
+                        username: req.body.username
+                }
         })
         if(exsistingUser){
                 res.status(411).json({
@@ -42,18 +44,22 @@ userRouter.post("/signup", async (req,res)=>{
                 })
                 return
         }
-        const user = await User.create({
-                username: req.body.username,
-                firstname: req.body.firstname,
-                lastname: req.body.lastname,
-                password: req.body.password
+        const user = await Prisma.user.create({
+                data:{
+                        username: req.body.username,
+                        firstname: req.body.firstname,
+                        lastname: req.body.lastname,
+                        password: req.body.password
+                }
         })
 
-        await Account.create({
-                userId: user._id,
-                Amount: Math.random()*10000
+        await Prisma.accounts.create({
+                data:{
+                        userId: user.userId,
+                        Amount: Math.random()*10000
+                }
         })
-        const userId = user._id
+        const userId = user.userId
         const token = jwt.sign({userId}, process.env.JWT_SECRET)
         res.status(200).json({
                 meassge: "User created succesfully",
@@ -69,8 +75,10 @@ userRouter.post("/signin",async (req,res)=>{
                 })
                 return
         }
-        const user = await User.findOne({
-                username: req.body.username,
+        const user = await Prisma.user.findFirst({
+                where:{
+                        username: req.body.username,
+                }
         })
         if(!user){
                 res.status(411).json({
@@ -98,36 +106,34 @@ userRouter.put("/",authMiddleware, (req,res)=>{
                 })
                 return
         }
-        User.updateOne({_id:req.userId},req.body)
+        Prisma.user.update({
+                where:{
+                        userId: req.userId
+                },
+                data:{
+                        username: req.body.username,
+                        lastname: req.body.lastname
+                }
+        })
 
         res.status(200).json({
                 message: "Information updated"
         })
 })
 
-userRouter.get("/bulk",(req,res)=>{
+userRouter.get("/bulk",async (req,res)=>{
         const filter = req.query.filter || ""
 
-        const users = User.find({
-                $or:[{
-                        firstname:{
-                                "$regex":filter
-                        }
-                },
-                {
-                        lastname:{
-                                "$regex":filter
-                        }
+        const users = await Prisma.user.findMany({
+                where:{
+                        OR:[
+                                {firstname:{contains:filter,mode:"insensetive"}},
+                                {lastname:{contains:filter,mode:"insensitive"}}
+                        ]
                 }
-        ]
         })
 
         res.status(200).json({
-                user: users.map(user=>({
-                        username: user.username,
-                        firstname: user.firstname,
-                        lastname: user.lastname,
-                        userId: user._id
-                }))
+                users: users
         })
 })

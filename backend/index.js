@@ -1,7 +1,6 @@
 import express from "express"
 import {apiRouter} from "./routes/apiRouter.js";
-import cors from "cors";
-import jwt from "jsonwebtoken";
+import cors from "cors"
 
 const app = express()
 app.use(cors())

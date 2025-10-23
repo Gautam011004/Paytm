@@ -1,15 +1,16 @@
-import mongoose from "mongoose"
-import { Account } from "../../db/db.js"
 import { authMiddleware } from "../middlewares/middleware.js"
-
 import express from "express"
+import { PrismaClient } from "@prisma/client"
 export const accRouter = express.Router()
 
+const Prisma = new PrismaClient()
 accRouter.get("/balance",authMiddleware,async (req,res)=>{
     const userId = req.userId
     console.log(userId)
-    const user = await Account.findOne({
-        userId: userId
+    const user = await Prisma.accounts.findFirst({
+        where:{
+            userId: userId
+        }
     })
     res.status(200).json({
         balance: user.Amount
@@ -17,53 +18,31 @@ accRouter.get("/balance",authMiddleware,async (req,res)=>{
 })
 
 accRouter.post("/transfer", authMiddleware, async(req,res)=>{
-    const transferId = req.body.to    
-    const amount = req.body.amount
-    const senderId = req.userId
-    console.log(senderId)
-    const sender = await Account.findOne({
-        userId: senderId
-    })
-    const user = await Account.findOne({
-        userId: transferId
-    })
-    if(!user){
-        res.status(400).json({
-            message: "Invalid account"
-        })
-        return
-    }
-    if(sender.Amount<amount){
-        res.status(400).json({
-            message: "Insufficient balance"
-        })
-        return
-    }
-    const session = await mongoose.startSession()
-
-    try{
-        await session.withTransaction(async()=>{
-            await Account.updateOne(
-                { userId: req.userId },
-                { $inc: { Amount: -amount }},
-                { session }
-            )
-            await Account.updateOne(
-                { userId: transferId },
-                { $inc: { Amount: +amount }},
-                { session }
-            )
+        const senderid = req.userId
+        const recieverid = req.body.to
+        const amount = req.body.amount
+        await Prisma.$transaction(async(tx)=>{
+            const sender = await tx.accounts.updateMany({
+                where:{
+                    userId: senderid, Amount:{gte:amount}
+                },
+                data:{
+                    Amount:{decrement:amount}
+                }
+            })
+            if(sender.count==0){
+                throw new Error("Something went wrong");
+            }
+            await tx.accounts.update({
+                where:{
+                    userId: recieverid
+                },
+                data:{
+                    Amount:{increment:amount}
+                }
+            })
         })
         res.status(200).json({
             message: "Transaction successful"
         })
-    }catch(e){
-        res.status(400).json({
-            message: "Transaction failed"
-        })
-        return
-    }
-    finally{
-        await session.endSession()
-    }
 })
