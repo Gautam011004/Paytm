@@ -5,10 +5,10 @@ export const AppBar=({name})=>{
         </div>
         <div className="flex space-x-2 p-2">
             <div>
-                Hello {name}
+                Hello, {name}
             </div>
             <div className="rounded-full bg-slate-500 h-7 w-7 text-center">
-                U
+                {name[0]}
             </div>
         </div>
     </div>

@@ -121,13 +121,27 @@ userRouter.put("/",authMiddleware, (req,res)=>{
         })
 })
 
+userRouter.get("/me",authMiddleware,async (req,res)=>{
+        const userId = req.userId
+        const User = await Prisma.user.findFirst({
+                where:
+                {
+                        userId: userId
+                }
+        })
+        res.status(200).json({
+                firstname : User.firstname,
+                lastname: User.lastname
+        })
+})
+
 userRouter.get("/bulk",async (req,res)=>{
         const filter = req.query.filter || ""
 
         const users = await Prisma.user.findMany({
                 where:{
                         OR:[
-                                {firstname:{contains:filter,mode:"insensetive"}},
+                                {firstname:{contains:filter,mode:"insensitive"}},
                                 {lastname:{contains:filter,mode:"insensitive"}}
                         ]
                 }

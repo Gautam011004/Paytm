@@ -24,7 +24,7 @@ export const User=()=>{
             setFilter(e.target.value)
         }} placeholder="Search users..."/>
         <div className="flex-col">
-                {User.map(user=><Users Initial={user.username[0]} Name={user.username} Id={user._id}/>)}
+                {User.map(user=><Users Initial={user.username[0]} Name={user.username} Id={user.userId}/>)}
         </div>
     </div>
 }
