@@ -5,11 +5,17 @@ import { User } from "../components/User"
 import { BACKEND_URL } from "../config"
 import { useState } from "react"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
 
 
 export const Dashboard = ()=>{
-    const [name,setName] = useState()
+    const [firstname,setName] = useState()
+    const Navigate = useNavigate()
     useEffect(()=>{
+        const token = localStorage.getItem("token")
+        if(!token){
+            Navigate("/signin")
+        }
         async function get(){
             const response = await axios.get(`${BACKEND_URL}${"/api/v1/user/me"}`,
             {
@@ -22,7 +28,7 @@ export const Dashboard = ()=>{
     get()
     },[])
     return <div className="p-10">
-        <AppBar name={name}></AppBar>
+        <AppBar name={firstname ? firstname : ""} />
         <div className="flex flex-col p-5 space-y-4">
             <Balance/>
             <User/>
